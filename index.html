@@ -22,13 +22,19 @@ async function loadArchive(artistId){
   const box=document.querySelector('#artistNewsArchive');
   if(!box)return;
   try{
-    const url=CORE_URL+'/rest/v1/rj_artist_news_archive?artist_profile_id=eq.'+encodeURIComponent(artistId)+'&select=title,body,link_url,author_name,author_type,original_created_at&order=original_created_at.desc';
+    const url=CORE_URL+'/rest/v1/rj_artist_news_archive?artist_profile_id=eq.'+encodeURIComponent(artistId)+'&select=title,body,link_url,author_name,author_type,original_created_at,media_type,media_path,media_mime&order=original_created_at.desc';
     const r=await fetch(url,{headers:{apikey:CORE_KEY,Authorization:'Bearer '+CORE_KEY}});
     if(!r.ok)throw new Error('HTTP '+r.status);
     const rows=await r.json();
     box.innerHTML='<h2>Actualités conservées</h2>'+(rows.length?rows.map(n=>{
       const linkHtml=safeUrl(n.link_url)?'<a class="btn secondary" style="display:inline-block;margin-top:10px" href="'+esc(n.link_url)+'" target="_blank" rel="noopener">OUVRIR LE LIEN</a>':'';
-      return '<div class="qa"><h3>'+esc(n.title)+'</h3><div class="small">'+esc(n.author_name)+' · '+new Date(n.original_created_at).toLocaleDateString('fr-CA')+'</div><p>'+esc(n.body)+'</p>'+linkHtml+'</div>';
+      const mediaUrl=n.media_path?CORE_URL+'/storage/v1/object/public/rap-jungle-news/'+n.media_path.split('/').map(encodeURIComponent).join('/'):'';
+      const mediaHtml=n.media_type==='image'&&mediaUrl
+        ? '<img src="'+esc(mediaUrl)+'" alt="" style="width:100%;max-height:500px;object-fit:cover;border-radius:14px;margin-top:10px">'
+        : n.media_type==='video'&&mediaUrl
+          ? '<video src="'+esc(mediaUrl)+'" controls playsinline preload="metadata" style="width:100%;max-height:500px;border-radius:14px;background:#000;margin-top:10px"></video>'
+          : '';
+      return '<div class="qa"><h3>'+esc(n.title)+'</h3><div class="small">'+esc(n.author_name)+' · '+new Date(n.original_created_at).toLocaleDateString('fr-CA')+'</div><p>'+esc(n.body)+'</p>'+mediaHtml+linkHtml+'</div>';
     }).join(''):'<div class="small">Aucune publication n’a encore été conservée dans cette fiche.</div>');
   }catch(e){
     box.innerHTML='<h2>Actualités conservées</h2><div class="small">Les actualités conservées sont temporairement indisponibles.</div>';
